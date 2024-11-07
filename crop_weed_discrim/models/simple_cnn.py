@@ -1,0 +1,1 @@
+# TODO: Define a class for a baseline CNN
