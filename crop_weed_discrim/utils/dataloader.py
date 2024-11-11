@@ -5,7 +5,7 @@ from torchvision.transforms import transforms
 
 class PlantSeedlingsDataset(Dataset):
     '''
-    Dataloader for the Plant Seedlings dataset Nonsegmented Single Plants from Aarhaus University
+    Dataloader for the Plant Seedlings dataset Nonsegmented Single Plants from Aarhus University
 
     https://vision.eng.au.dk/plant-seedlings-dataset/#citation
     '''
