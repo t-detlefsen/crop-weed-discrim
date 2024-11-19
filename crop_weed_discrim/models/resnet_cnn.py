@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torchvision
 
 class ResNetCNN(nn.Module):
     """
@@ -9,6 +10,7 @@ class ResNetCNN(nn.Module):
         self.num_classes = num_classes
         
         # Removing final FC layer and freezing weights - https://discuss.pytorch.org/t/how-to-delete-layer-in-pretrained-model/17648/5
+        self.resnet = torchvision.models.resnet18(weights='IMAGENET1K_V1')
         self.resnet = nn.Sequential(*list(self.resnet.children())[:-1])
 
         # Define layers
