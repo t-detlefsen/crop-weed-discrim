@@ -3,8 +3,7 @@ from __future__ import print_function
 import torch
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
-import utils  
-from utils.dataloader import PlantSeedlingsDataset  
+from crop_weed_discrim.utils.dataloader import PlantSeedlingsDataset  
 
 import os
 from datetime import datetime
