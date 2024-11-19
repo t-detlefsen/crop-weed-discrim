@@ -1,98 +1,76 @@
-from __future__ import print_function
+import os
+import shutil
+from tqdm import tqdm
 
 import torch
-import numpy as np
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from crop_weed_discrim.utils.dataloader import PlantSeedlingsDataset  
 
-import os
-from datetime import datetime
+def create_experiment_directory():
+    '''
+    Create a new experiment directory w/ configs and tensorboard writer
 
-def create_experiment_directory(args):
-    """
-    Makes a directory based on hyperparameters and timestamp.
-    """
-    # Include hyperparameters in the experiment name
-    experiment_name = (
-        f"lr{args.lr}_bs{args.batch_size}_ss{args.step_size}_gamma{args.gamma}_inp{args.inp_size}_"
-        + datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    )
+    Returns:
+        experiment_dir (str): The image corresponding to the index
+        label (torch.utils.tensorboard.writer.SummaryWriter): Tensorboard writer
+    '''
+    # Find newest experiment
+    exps = os.listdir("exp")
+    exps = [exp for exp in exps if (exp != '.DS_Store' and exp != '.gitignore')]
+    try:
+        experiment_name = "exp" + str(max([int(exp[3:]) for exp in exps]) + 1)
+    except:
+        experiment_name = "exp0"
 
     # Create the directory
     experiment_dir = os.path.join("exp", experiment_name)
     os.makedirs(experiment_dir, exist_ok=True)
-
     print(f"Experiment directory created: {experiment_dir}")
-    return experiment_dir
 
+    # Create files
+    shutil.copyfile("config.yaml", os.path.join(experiment_dir, "config.yaml")) # Configs
+    writer = SummaryWriter(log_dir=experiment_dir) # Tensorboard writer
 
+    return experiment_dir, writer
 
-def save_model(epoch, model_name, model):
-    """
-    From Assigment
-    """
-    filename = f'checkpoint-{model_name}-epoch{epoch+1}.pth'
-    print(f"Saving model at {filename}")
-    torch.save(model.state_dict(), filename)
-
-
-def save_this_epoch(args, epoch):
-    """
-    From assignment
-    """
-    if args.save_freq > 0 and (epoch + 1) % args.save_freq == 0:
-        return True
-    if args.save_at_end and (epoch + 1) == args.epochs:
-        return True
-    return False
-
-
-def train(args, model, optimizer, scheduler=None, model_name="model"):
+def train(args, data, model, loss_fn, optimizer, scheduler=None):
     """
     Train the model based on specified training parameters.
 
     Args:
-        args: Training arguments including hyperparameters and configurations.
-        model: The model to be trained.
-        optimizer: Optimizer for training the model.
-        scheduler: Learning rate scheduler (optional).
-        model_name: Name to save the model under.
-
-    Returns:
-        None
+        args (ARGS): Training arguments including hyperparameters and configurations.
+        data (dict<SubsetWrapper>): Pre-split train, test, and validation data
+        model (nn.Module): The model to train
+        loss_fn (torch.nn.modules.loss): Loss function
+        optimizer (torch.optim.adam.Adam): Optimizer
+        scheduler (torch.optim.lr_scheduler): Learning rate scheduler
     """
-    # TODO: Create a new experiment under the exp directory (unique name, save hyperparameters, tensorboard)
-    experiment_dir = create_experiment_directory()
-    writer = SummaryWriter(log_dir=experiment_dir)
-    print(f"Experiment logs saved at {experiment_dir}")
+    # Create a new experiment under the exp directory (unique name, save hyperparameters, tensorboard)
+    experiment_dir, writer = create_experiment_directory()
 
-    # Get data loaders (assuming utils provides `get_data_loader`)
-    train_loader = utils.get_data_loader(
-        dataset='plant_seedlings', train=True, batch_size=args.batch_size, split='train', inp_size=args.inp_size)
-    val_loader = utils.get_data_loader(
-        dataset='plant_seedlings', train=False, batch_size=args.test_batch_size, split='val', inp_size=args.inp_size)
+    # Create dataloaders
+    train_loader = DataLoader(data["train"], batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(data["val"], batch_size=args.batch_size, shuffle=True)
 
     # Ensure model is on the correct device
     model.train()
     model = model.to(args.device)
-    cnt = 0  # Counter for logging
 
     for epoch in range(args.epochs):
-
-        # TODO: Train model
         epoch_loss = 0
+        best_acc = 0
 
-        for batch_idx, (data, target) in enumerate(train_loader):
-
-            data, target, wgt = data.to(args.device), target.to(args.device), wgt.to(args.device)
+        # Train model
+        print(f"Train Epoch {epoch}")
+        for images, labels in tqdm(train_loader):
+            images, labels = images.to(args.device), labels.to(args.device)
 
             # Forward pass
             optimizer.zero_grad()
-            output = model(data)
+            output = model(images)
 
-            # Cross entropy loss with pytorch
-            loss_fn = torch.nn.CrossEntropyLoss()
-            loss = loss_fn(output, target)
+            # Calculate loss
+            loss = loss_fn(output, labels)
 
             # Backward pass
             loss.backward()
@@ -100,44 +78,40 @@ def train(args, model, optimizer, scheduler=None, model_name="model"):
 
             epoch_loss += loss.item()
 
-            # Add loss to tensorboard
-            writer.add_scalar("Loss/train", loss.item(), cnt)
+        # Report stats
+        print(f"Epoch {epoch} | Average Training Loss: {epoch_loss / len(train_loader):.4f}")
+        writer.add_scalar("Loss/train", epoch_loss, epoch)
+        writer.add_scalar("learning_rate", scheduler.get_last_lr()[0], epoch)
 
-            # TODO: Add terminal output for important things (acc, loss, etc.)
-            if cnt % args.log_every == 0:
-                print(f"Epoch: {epoch}, Batch: {batch_idx}, Loss: {loss.item():.4f}")
-
-            cnt += 1
-
-        print(f"Epoch {epoch+1} | Average Training Loss: {epoch_loss / len(train_loader):.4f}")
-
-        # TODO: Validate model (every N epochs)
+        # Validate model
         if epoch % args.val_every == 0:
+            print(f"Val Epoch {epoch}")
             model.eval()
             val_loss = 0
             correct = 0
             with torch.no_grad():
-                for data, target in val_loader:
-                    data, target = data.to(args.device), target.to(args.device)
-                    output = model(data)
-                    val_loss += loss_fn(output, target).item()
+                for image, label in tqdm(val_loader):
+                    image, label = image.to(args.device), label.to(args.device)
+                    output = model(image)
+                    val_loss += loss_fn(output, label).item()
                     pred = output.argmax(dim=1)
-                    correct += pred.eq(target).sum().item()
+                    correct += pred.eq(label).sum().item()
 
             val_loss /= len(val_loader)
             accuracy = correct / len(val_loader.dataset)
             print(f"Validation Epoch {epoch+1} | Loss: {val_loss:.4f}, Accuracy: {accuracy:.4f}")
-            writer.add_scalar("Validation/Loss", val_loss, cnt)
-            writer.add_scalar("Validation/Accuracy", accuracy, cnt)
-            model.train()
+            writer.add_scalar("Validation/Loss", val_loss, epoch)
+            writer.add_scalar("Validation/Accuracy", accuracy, epoch)
 
-        # TODO: Save results
-        if save_this_epoch(args, epoch):
-            save_model(epoch, model_name, model)
+            # Save results
+            if accuracy > best_acc:
+                print("Saving model")
+                torch.save(model.state_dict(), os.path.join(experiment_dir, "weights.pth"))
+                best_acc = accuracy
 
         # Step the scheduler
         if scheduler is not None:
             scheduler.step()
-            writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], cnt)
+            writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], epoch)
 
     writer.close()

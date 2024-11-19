@@ -1,3 +1,5 @@
+import torch
+
 class ARGS(object):
     """
     Tracks hyper-parameters for trainer code 
@@ -16,6 +18,8 @@ class ARGS(object):
     lr = 5e-4 # Learning rate
     step_size = 6 # Learning rate step
     gamma = 0.25 # Learning rate gamma
+    use_cuda = True # Enable GPU during trainingß
+    val_every = 5 # Validate very N epochs
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -29,3 +33,7 @@ class ARGS(object):
             if '__' not in attr and attr !='use_cuda':
                 repr_str += 'args.{} = {}\n'.format(attr, getattr(self, attr))
         return repr_str
+    
+    @property
+    def device(self):
+        return torch.device("cuda" if self.use_cuda else "cpu")
