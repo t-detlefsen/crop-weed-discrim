@@ -66,6 +66,7 @@ if __name__ == "__main__":
     loss_fn = torch.nn.CrossEntropyLoss() # do we need soemthing different???
 
     # Train model using trainer.py
-    trainer.train(configs, data, model, loss_fn, optimizer, scheduler)
+    experiment_dir = trainer.train(configs, data, model, loss_fn, optimizer, scheduler)
 
-    # TODO: Visualize / Evaluate on data["test"]
+    # TODO: Evaluate accuracy on data["test"]
+    # TODO: Viusualize confusion matrix for data["test"]

@@ -11,7 +11,7 @@ def create_experiment_directory():
     Create a new experiment directory w/ configs and tensorboard writer
 
     Returns:
-        experiment_dir (str): The image corresponding to the index
+        experiment_dir (str): The experiment directory to save files
         label (torch.utils.tensorboard.writer.SummaryWriter): Tensorboard writer
     '''
     # Find newest experiment
@@ -44,6 +44,9 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
         loss_fn (torch.nn.modules.loss): Loss function
         optimizer (torch.optim.adam.Adam): Optimizer
         scheduler (torch.optim.lr_scheduler): Learning rate scheduler
+
+    Returns:
+        experiment_dir (str): The experiment directory to save files
     """
     # Create a new experiment under the exp directory (unique name, save hyperparameters, tensorboard)
     experiment_dir, writer = create_experiment_directory()
@@ -115,3 +118,5 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
             writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], epoch)
 
     writer.close()
+
+    return experiment_dir

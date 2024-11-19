@@ -45,6 +45,13 @@ class PlantSeedlingsDataset(Dataset):
         label = self.class_names.index(self.image_list[idx].split("/")[0])
 
         image = Image.open(self.data_dir + self.image_list[idx])
+
+        # Remove image transparency if necessary
+        if image.mode == 'RGBA':
+            image.load()
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            background.paste(image, mask=image.split()[3])
+            image = background
         
         return image, label
 
@@ -77,7 +84,7 @@ class SubsetWrapper(Dataset):
 
         # Create transforms
         self.transforms = transforms.Compose([
-            transforms.Resize(self.size),
+            transforms.Resize((self.size, self.size)),
             *tfs,
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.457, 0.407], std=[0.5, 0.5, 0.5])])
