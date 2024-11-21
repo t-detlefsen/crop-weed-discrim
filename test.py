@@ -73,7 +73,7 @@ if __name__ == "__main__":
     model = ResNetCNN(len(dataset.class_names))
 
     # Load model
-    model.load_state_dict(torch.load(os.path.join('exp', config.experiment.name, 'best.pth'), map_location=configs.device))
+    model.load_state_dict(torch.load(os.path.join(experiment_dir, 'weights.pth'), map_location=configs.device))
     model = model.to(configs.device)
 
     # Test model using tester.py
