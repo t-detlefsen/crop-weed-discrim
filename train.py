@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torchvision import transforms
 
-from crop_weed_discrim import trainer
+from crop_weed_discrim import trainer, tester
 from crop_weed_discrim.utils.utils import ARGS
 from crop_weed_discrim.models.resnet_cnn import ResNetCNN
 from crop_weed_discrim.utils.dataloader import PlantSeedlingsDataset, SubsetWrapper
@@ -68,5 +68,5 @@ if __name__ == "__main__":
     # Train model using trainer.py
     experiment_dir = trainer.train(configs, data, model, loss_fn, optimizer, scheduler)
 
-    # TODO: Evaluate accuracy on data["test"]
-    # TODO: Viusualize confusion matrix for data["test"]
+    # Test model using tester.py
+    tester.test(configs, data, model, experiment_dir, dataset.class_names)
