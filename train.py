@@ -7,7 +7,8 @@ from torchvision import transforms
 
 from crop_weed_discrim import trainer, tester
 from crop_weed_discrim.utils.utils import ARGS
-from crop_weed_discrim.models.resnet_cnn import ResNetCNN
+# Import ResNetCNN that outputs both features and logits for PC
+from crop_weed_discrim.models.resnet_pc import ResNetCNN
 from crop_weed_discrim.utils.dataloader import PlantSeedlingsDataset, SubsetWrapper
 
 if __name__ == "__main__":
@@ -29,7 +30,7 @@ if __name__ == "__main__":
         step_size = config['hyperparams']['step_size'],
         gamma = config['hyperparams']['gamma'],
         use_cuda = config['hyperparams']['use_cuda'],
-        val_every = config['hyperparams']['val_every']
+        val_every = config['hyperparams']['val_every'],
     )
 
     print("Loaded config.yaml:")

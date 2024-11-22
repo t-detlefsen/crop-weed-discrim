@@ -1,10 +1,29 @@
 import os
 import shutil
 from tqdm import tqdm
-
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+
+####################################################################################################
+# Pairwise Confusion and Entropic Confusion Losses
+# Refer to https://github.com/abhimanyudubey/confusion
+
+def PairwiseConfusion(features):
+    batch_size = features.size(0)
+    if batch_size % 2 != 0:
+        features = features[:-1]  # Drop the last sample to make the batch size even
+    batch_left = features[:batch_size // 2]
+    batch_right = features[batch_size // 2:]
+    loss = torch.norm((batch_left - batch_right).abs(), 2, 1).sum() / float(batch_size)
+
+    return loss
+
+def EntropicConfusion(features):
+    batch_size = features.size(0)
+
+    return torch.mul(features, torch.log(features)).sum() * (1.0 / batch_size)
+####################################################################################################
 
 def create_experiment_directory():
     '''
@@ -52,12 +71,18 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
     experiment_dir, writer = create_experiment_directory()
 
     # Create dataloaders
-    train_loader = DataLoader(data["train"], batch_size=args.batch_size, shuffle=True)
+    train_loader = DataLoader(data["train"], batch_size=args.batch_size, shuffle=True, drop_last=True) # Drop last to ensure even batch size
     val_loader = DataLoader(data["val"], batch_size=args.batch_size, shuffle=True)
 
     # Ensure model is on the correct device
     model.train()
     model = model.to(args.device)
+
+    ####################################################################################################
+    # Regularization weights
+    lambda_pc = 0.1  # Weight for Pairwise Confusion
+    lambda_ec = 0.01  # Weight for Entropic Confusion
+    ####################################################################################################
 
     for epoch in range(args.epochs):
         epoch_loss = 0
@@ -70,16 +95,27 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
 
             # Forward pass
             optimizer.zero_grad()
-            output = model(images)
+            ####################################################################################################
+            # Model outputs features and logits
+            features, output = model(images)  
 
             # Calculate loss
-            loss = loss_fn(output, labels)
-
+            classification_loss = loss_fn(output, labels)
+            pairwise_confusion_loss = PairwiseConfusion(features)
+            entropic_confusion_loss = EntropicConfusion(torch.softmax(output, dim=1))
+            # Combine losses
+            total_loss = (
+                classification_loss
+                + lambda_pc * pairwise_confusion_loss
+                + lambda_ec * entropic_confusion_loss
+            )
             # Backward pass
-            loss.backward()
+            total_loss.backward()
+            ####################################################################################################
+
             optimizer.step()
 
-            epoch_loss += loss.item()
+            epoch_loss += total_loss.item()
 
         # Report stats
         print(f"Epoch {epoch} | Average Training Loss: {epoch_loss / len(train_loader):.4f}")
@@ -92,11 +128,14 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
             model.eval()
             val_loss = 0
             correct = 0
+            # Validation loop
             with torch.no_grad():
                 for image, label in tqdm(val_loader):
                     image, label = image.to(args.device), label.to(args.device)
-                    output = model(image)
-                    val_loss += loss_fn(output, label).item()
+                    ####################################################################################################
+                    features, output = model(image)  # Get both features and logits
+                    val_loss += loss_fn(output, label).item()  # Use logits for loss calculation
+                    ####################################################################################################
                     pred = output.argmax(dim=1)
                     correct += pred.eq(label).sum().item()
 
@@ -105,7 +144,7 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
             print(f"Validation Epoch {epoch+1} | Loss: {val_loss:.4f}, Accuracy: {accuracy:.4f}")
             writer.add_scalar("Validation/Loss", val_loss, epoch)
             writer.add_scalar("Validation/Accuracy", accuracy, epoch)
-
+            print(f"Predicted: {pred}, Labels: {label}")
             # Save results
             if accuracy > best_acc:
                 print("Saving model")
