@@ -25,8 +25,8 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
     best_acc = 0
 
     # Create dataloaders
-    train_loader = DataLoader(data["train"], batch_size=args.batch_size, shuffle=True, drop_last=True) # Drop last to ensure even batch size
-    val_loader = DataLoader(data["val"], batch_size=args.batch_size, shuffle=True)
+    train_loader = DataLoader(data["train"], batch_size=args.batch_size, shuffle=True, drop_last=True, num_workers=0) # Drop last to ensure even batch size
+    val_loader = DataLoader(data["val"], batch_size=args.batch_size, shuffle=True, num_workers=0)
 
     # Ensure model is on the correct device
     model.train()
@@ -60,7 +60,6 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
         # Report stats
         print(f"Epoch {epoch} | Average Training Loss: {epoch_loss / len(train_loader):.4f}")
         writer.add_scalar("Train/Loss", epoch_loss, epoch)
-        writer.add_scalar("learning_rate", scheduler.get_last_lr()[0], epoch)
 
         # Validate model
         if epoch % args.val_every == 0:

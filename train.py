@@ -13,8 +13,10 @@ from crop_weed_discrim.utils.dataloader import PlantSeedlingsDataset, SubsetWrap
 if __name__ == "__main__":
     # Set random seeds
     np.random.seed(0)
-    torch.manual_seed(0)
     random.seed(0)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed(0)
+    torch.backends.cudnn.deterministic=True
 
     # Load in parameters from config.yaml
     with open("config.yaml", "r") as config_file:

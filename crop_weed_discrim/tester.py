@@ -16,8 +16,9 @@ def test(args, data, model, experiment_dir, class_names):
         model (nn.Module): The model to train
         experiment_dir (str): The experiment directory to save files
     """
+    
     # Create dataloader
-    test_loader = DataLoader(data["test"], batch_size=1, shuffle=False)
+    test_loader = DataLoader(data["test"], batch_size=1, shuffle=False, num_workers=0)
 
     # Freeze weights
     with torch.no_grad():
