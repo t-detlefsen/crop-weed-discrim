@@ -22,6 +22,7 @@ class PlantSeedlingsDataset(Dataset):
         # Determine classes
         self.class_names = os.listdir(self.data_dir)
         self.class_names = [folder for folder in self.class_names if folder != '.DS_Store']
+        self.class_names.sort()
 
         # Create image list
         self.image_list = []

@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-# TODO: Evaluate accuracy on data["test"]
-# TODO: Viusualize confusion matrix for data["test"]
-
 def test(args, data, model, experiment_dir, class_names):
     """
     Determine the accuracy and confusion matrix given a testset and model
@@ -32,14 +29,11 @@ def test(args, data, model, experiment_dir, class_names):
         # Loop through each image in test set
         for images, labels in tqdm(test_loader):
             images, labels = images.to(args.device), labels.to(args.device)
-            # output = model(images)
-            # pred = output.argmax()
 
-            ####################################################################################################
             __, logits = model(images)  # Unpack the tuple
             logits = logits.unsqueeze(0)  # Add a batch dimension
-            pred = logits.argmax(dim=1)  # Use logits to calculate predictions  
-            ####################################################################################################
+            pred = logits.argmax(dim=1)  # Use logits to calculate predictions
+
             correct += pred.eq(labels).sum().item()
             predicted.append(pred.item())
             actual.append(labels.item())

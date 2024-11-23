@@ -7,8 +7,7 @@ from torchvision import transforms
 
 from crop_weed_discrim import trainer, tester
 from crop_weed_discrim.utils.utils import ARGS
-# Import ResNetCNN that outputs both features and logits for PC
-from crop_weed_discrim.models.resnet_pc import ResNetCNN
+from crop_weed_discrim.models.resnet_cnn import ResNetCNN
 from crop_weed_discrim.utils.dataloader import PlantSeedlingsDataset, SubsetWrapper
 
 if __name__ == "__main__":
@@ -31,6 +30,9 @@ if __name__ == "__main__":
         gamma = config['hyperparams']['gamma'],
         use_cuda = config['hyperparams']['use_cuda'],
         val_every = config['hyperparams']['val_every'],
+        pc_loss = config['pairwise_confusion']['pc_loss'],
+        lambda_pc = config['pairwise_confusion']['lambda_pc'],
+        lambda_ec = config['pairwise_confusion']['lambda_ec'],
     )
 
     print("Loaded config.yaml:")
@@ -63,11 +65,11 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=configs.lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=configs.step_size, gamma=configs.gamma)
 
-    # Setup loss function
-    loss_fn = torch.nn.CrossEntropyLoss() # do we need soemthing different???
+    # Setup loss functions
+    cls_loss_fn = torch.nn.CrossEntropyLoss()
 
     # Train model using trainer.py
-    experiment_dir = trainer.train(configs, data, model, loss_fn, optimizer, scheduler)
+    experiment_dir = trainer.train(configs, data, model, cls_loss_fn, optimizer, scheduler)
 
     # Test model using tester.py
     tester.test(configs, data, model, experiment_dir, dataset.class_names)
