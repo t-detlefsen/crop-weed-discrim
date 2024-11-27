@@ -10,5 +10,10 @@ hyperparams:
   use_cuda: True
   val_every: 5
 
+pairwise_confusion:
+  pc_loss: False
+  lambda_pc: 0.1
+  lambda_ec: 0.01
+
 dataset:
   name: plant_seedlings

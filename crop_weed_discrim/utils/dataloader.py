@@ -18,16 +18,18 @@ class PlantSeedlingsDataset(Dataset):
         '''
         super().__init__()
         self.data_dir = data_dir
-        
+
         # Determine classes
         self.class_names = os.listdir(self.data_dir)
         self.class_names = [folder for folder in self.class_names if folder != '.DS_Store']
+        self.class_names.sort()
 
         # Create image list
         self.image_list = []
         for class_name in self.class_names:
             file_list = os.listdir(self.data_dir+class_name)
             file_list = [class_name + "/" + file for file in file_list if file != '.DS_Store']
+            file_list.sort()
             
             self.image_list += file_list
 

@@ -11,7 +11,7 @@ class ResNetCNN(nn.Module):
         
         # Removing final FC layer and freezing weights - https://discuss.pytorch.org/t/how-to-delete-layer-in-pretrained-model/17648/5
         self.resnet = torchvision.models.resnet18(weights='IMAGENET1K_V1')
-        self.resnet = nn.Sequential(*list(self.resnet.children())[:-1])
+        self.feature_extractor = nn.Sequential(*list(self.resnet.children())[:-1])
 
         # Define layers
         self.fc = nn.Linear(512, num_classes)
@@ -19,11 +19,12 @@ class ResNetCNN(nn.Module):
     def forward(self, x):
         """
         :param x: input image in shape of (N, C, H, W)
-        :return: out: classification logits in shape of (N, Nc)
+        :return: features: extracted features from the penultimate layer
+                 logits: classification logits
         """
         
-        out = self.resnet(x)
-        out = out.squeeze()
-        out = self.fc(out)
+        features = self.feature_extractor(x)
+        features = features.squeeze()  # Flatten features
+        logits = self.fc(features)  # Compute class logits
 
-        return out
+        return features, logits

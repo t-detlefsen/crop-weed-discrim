@@ -43,7 +43,10 @@ if __name__ == "__main__":
         step_size = config['hyperparams']['step_size'],
         gamma = config['hyperparams']['gamma'],
         use_cuda = config['hyperparams']['use_cuda'],
-        val_every = config['hyperparams']['val_every']
+        val_every = config['hyperparams']['val_every'],
+        pc_loss = config['pairwise_confusion']['pc_loss'],
+        lambda_pc = config['pairwise_confusion']['lambda_pc'],
+        lambda_ec = config['pairwise_confusion']['lambda_ec'],
     )
 
     print("Loaded config.yaml:")
