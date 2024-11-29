@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from tqdm import tqdm
 import torch
 from torch.utils.data import DataLoader
@@ -32,6 +33,10 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
     model.train()
     model = model.to(args.device)
 
+    # Initialize arrays for storing features and labels
+    all_features = []
+    all_labels = []
+
     for epoch in range(args.epochs):
         epoch_loss = 0
 
@@ -43,6 +48,10 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
             # Forward pass
             optimizer.zero_grad()
             features, output = model(images)
+
+            #  Store features and labels
+            all_features.append(features.cpu().detach().numpy())
+            all_labels.append(labels.cpu().detach().numpy())
 
             # Calculate loss
             if args.pc_loss:
@@ -93,5 +102,9 @@ def train(args, data, model, loss_fn, optimizer, scheduler=None):
             writer.add_scalar("Learning Rate", scheduler.get_last_lr()[0], epoch)
 
     writer.close()
+
+    # Save features and labels
+    np.save(experiment_dir +'/features.npy', np.vstack(all_features))  
+    np.save(experiment_dir +'/labels.npy', np.hstack(all_labels))  
 
     return experiment_dir
