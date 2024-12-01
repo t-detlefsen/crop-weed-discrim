@@ -24,6 +24,7 @@ This will create a new experiment in the `exp` directory containing:
 - `events.out.tfevents` - A log of training statistics viewable via tensorboard
 - `weights.pth` - The weights from the best performing epoch
 - `confusion_matrix.png` - A confusion matrix run on the test data
+- `tsne.png` - A visualization of the features labeled by class
 
 ## Testing
 To test a previously trained model, run the following command where `N` is the experiment you would like to test.
@@ -32,7 +33,7 @@ To test a previously trained model, run the following command where `N` is the e
 python test.py exp<N>
 ```
 
-This will return the accuracy of the model and overwrite `confusion_matrix.png`, the confusion matrix run on the test data. Testing will use the `config.yaml` specified in the experiment
+This will return the accuracy of the model and overwrite `confusion_matrix.png` and `tsne.png`, the confusion matrix and feature visualization run on the test data. Testing will use the `config.yaml` specified in the experiment
 
 
 ## Pairwise Confusion Integration with ResNet
