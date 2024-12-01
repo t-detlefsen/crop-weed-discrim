@@ -27,8 +27,8 @@ class ARGS(object):
 
     # Pairwise Confusion
     pc_loss = True
-    lambda_pc = 0.1  # Weight for Pairwise Confusion
-    lambda_ec = 0.01 # Weight for Entropic Confusion
+    lambda_pc = 0.15  # Weight for Pairwise Confusion
+    lambda_ec = 0.025 # Weight for Entropic Confusion
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
