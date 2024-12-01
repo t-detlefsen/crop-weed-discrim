@@ -3,7 +3,6 @@ import random
 import numpy as np
 
 import torch
-
 from torchvision import transforms
 
 from crop_weed_discrim import trainer, tester
@@ -45,9 +44,6 @@ if __name__ == "__main__":
     datasets = ["plant_seedlings"]
     if configs.dataset_name == "plant_seedlings":
         dataset = PlantSeedlingsDataset()
-        print("Class Names: ")
-        print(dataset.class_names)
-        print()
     else:
         raise NotImplementedError(f"{configs.dataset_name} not implemented, choose one of the following {datasets}")
     
@@ -76,7 +72,6 @@ if __name__ == "__main__":
 
     # Train model using trainer.py
     experiment_dir = trainer.train(configs, data, model, cls_loss_fn, optimizer, scheduler)
-    np.save(experiment_dir + '/class_names.npy', dataset.class_names)
 
     # Test model using tester.py
     tester.test(configs, data, model, experiment_dir, dataset.class_names)

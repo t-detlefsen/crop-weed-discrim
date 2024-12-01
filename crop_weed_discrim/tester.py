@@ -1,14 +1,16 @@
 import os
 from tqdm import tqdm
 from sklearn import metrics
+from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 import torch
 from torch.utils.data import DataLoader
 
 def test(args, data, model, experiment_dir, class_names):
     """
-    Determine the accuracy and confusion matrix given a testset and model
+    Determine the accuracy, generate confusion matrix, and tsne plot given a testset and model
 
     Args:
         args (ARGS): Training arguments including hyperparameters and configurations.
@@ -19,6 +21,10 @@ def test(args, data, model, experiment_dir, class_names):
     
     # Create dataloader
     test_loader = DataLoader(data["test"], batch_size=1, shuffle=False, num_workers=0)
+
+    # Initialize arrays for storing features and labels
+    all_features = []
+    all_labels = []
 
     # Freeze weights
     with torch.no_grad():
@@ -31,9 +37,12 @@ def test(args, data, model, experiment_dir, class_names):
         for images, labels in tqdm(test_loader):
             images, labels = images.to(args.device), labels.to(args.device)
 
-            __, logits = model(images)  # Unpack the tuple
+            features, logits = model(images)  # Unpack the tuple
             logits = logits.unsqueeze(0)  # Add a batch dimension
             pred = logits.argmax(dim=1)  # Use logits to calculate predictions
+
+            all_features.append(features.cpu().detach())
+            all_labels.append(labels.cpu().detach())
 
             correct += pred.eq(labels).sum().item()
             predicted.append(pred.item())
@@ -53,3 +62,24 @@ def test(args, data, model, experiment_dir, class_names):
         plt.xticks(rotation=90)
         plt.tight_layout()
         plt.savefig(os.path.join(experiment_dir, "confusion_matrix.png"))
+
+        # Plot TSNE Visualization
+        tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+        features_2d = tsne.fit_transform(torch.vstack(all_features))
+
+        plt.figure(figsize=(12, 8), constrained_layout = True)
+        scatter = plt.scatter(features_2d[:, 0], features_2d[:, 1], c=torch.vstack(all_labels), cmap='tab20', alpha=0.7)
+
+        legend_elements = [
+            Line2D([0], [0], marker='o', color='w', markerfacecolor=scatter.cmap(scatter.norm(i)), label=class_name, markersize=10)
+            for i, class_name in enumerate(class_names)
+        ]
+
+        plt.legend(handles=legend_elements, title="Classes", bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        plt.title('t-SNE Visualization of Features')
+        plt.xlabel('Dimension 1')
+        plt.ylabel('Dimension 2')
+        plt.tight_layout()
+
+        plt.savefig(os.path.join(experiment_dir, "tsne.png"))
