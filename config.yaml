@@ -12,8 +12,8 @@ hyperparams:
 
 pairwise_confusion:
   pc_loss: False
-  lambda_pc: 0.1
-  lambda_ec: 0.01
+  lambda_pc: 0.15
+  lambda_ec: 0.025
 
 dataset:
   name: plant_seedlings
